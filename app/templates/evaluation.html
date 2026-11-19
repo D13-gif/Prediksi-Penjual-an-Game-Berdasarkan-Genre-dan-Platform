@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Model Evaluation - Game Sales AI{% endblock %}
+{% block content %}
+{% set R = meta.results if meta and meta.results else {} %}
+{% set B = R.baseline if R.baseline else {} %}
+{% set F = R.final if R.final else {} %}
+{% set BT = B.test if B.test else {} %}
+{% set FT = F.test if F.test else {} %}
+{% set BTr = B.train if B.train else {} %}
+{% set FTr = F.train if F.train else {} %}
+{% set BC = B.comparison if B.comparison else {} %}
+{% set FC = F.comparison if F.comparison else {} %}
+<div class="topbar">
+  <div><h1 class="page-title">Model Evaluation</h1><p class="page-sub">Decision Tree (Gini) — baseline vs pruned, metrik aktual (tanpa data leakage).</p></div>
+</div>
+{% if load_error %}<div class="alert alert-warn">{{ load_error }}</div>{% endif %}
+{% if not meta %}<div class="alert alert-error">Metadata model tidak ditemukan. Jalankan <code class="k">python train_model.py</code>.</div>{% else %}
+
+<div class="card">
+  <h3>Konfigurasi eksperimen</h3>
+  <ul class="clean small">
+    <li>Algoritma: <code class="k">DecisionTreeClassifier(criterion="gini")</code>, <code class="k">random_state={{ meta.model.random_state }}</code>.</li>
+    <li>Split: {{ (meta.split.test_size * 100)|int }}:{{ (100 - meta.split.test_size*100)|int }} stratified (train {{ meta.split.train_rows|comma }}, test {{ meta.split.test_rows|comma }}). Stratify menjaga proporsi kelas.</li>
+    <li>Fitur: {{ meta.features.used|join(', ') }}. <strong>Dikecualikan (anti leakage):</strong> {{ meta.features.excluded|join(', ') }}.</li>
+    <li>Rata-rata multi-kelas: <code class="k">macro</code> (setara antar kelas, penting saat imbalanced) dan <code class="k">weighted</code> (tertimbang dukungan). Accuracy saja tidak cukup untuk kelas Tinggi/Sedang yang minoritas.</li>
+  </ul>
+</div>
+
+<div class="grid grid-2" style="margin-top:14px">
+  <div class="card">
+    <h3>Baseline (unpruned) — Test</h3>
+    <div class="grid grid-2">
+      <div class="kpi card" style="box-shadow:none"><div class="label">Accuracy</div><div class="value">{{ BT.accuracy|fmt4 }}</div></div>
+      <div class="kpi card" style="box-shadow:none"><div class="label">F1 macro / weighted</div><div class="value" style="font-size:1.1rem">{{ BT.f1_macro|fmt4 }} / {{ BT.f1_weighted|fmt4 }}</div></div>
+      <div class="kpi card" style="box-shadow:none"><div class="label">Precision (w/m)</div><div class="value" style="font-size:1.05rem">{{ BT.precision_weighted|fmt4 }} / {{ BT.precision_macro|fmt4 }}</div></div>
+      <div class="kpi card" style="box-shadow:none"><div class="label">Recall (w/m)</div><div class="value" style="font-size:1.05rem">{{ BT.recall_weighted|fmt4 }} / {{ BT.recall_macro|fmt4 }}</div></div>
+    </div>
+    <div class="alert {{ 'alert-error' if BC.overfit_warning else 'alert-info' }}" style="margin-top:10px">Train Acc {{ BTr.accuracy|fmt4 }} vs Test Acc {{ BT.accuracy|fmt4 }} (gap {{ BC.accuracy_gap|fmt4 }}). {{ 'Indikasi overfitting.' if BC.overfit_warning else 'Gap relatif kecil.' }}</div>
+  </div>
+  <div class="card">
+    <h3>Final (pruned: {{ meta.model.final_name }}) — Test</h3>
+    <div class="grid grid-2">
+      <div class="kpi card" style="box-shadow:none"><div class="label">Accuracy</div><div class="value">{{ FT.accuracy|fmt4 }}</div></div>
+      <div class="kpi card" style="box-shadow:none"><div class="label">F1 macro / weighted</div><div class="value" style="font-size:1.1rem">{{ FT.f1_macro|fmt4 }} / {{ FT.f1_weighted|fmt4 }}</div></div>
+      <div class="kpi card" style="box-shadow:none"><div class="label">Precision (w/m)</div><div class="value" style="font-size:1.05rem">{{ FT.precision_weighted|fmt4 }} / {{ FT.precision_macro|fmt4 }}</div></div>
+      <div class="kpi card" style="box-shadow:none"><div class="label">Recall (w/m)</div><div class="value" style="font-size:1.05rem">{{ FT.recall_weighted|fmt4 }} / {{ FT.recall_macro|fmt4 }}</div></div>
+    </div>
+    <div class="muted small" style="margin-top:8px">Parameter final: {{ meta.model.final_params }}. Train Acc {{ FTr.accuracy|fmt4 }} vs Test {{ FT.accuracy|fmt4 }} (gap {{ FC.accuracy_gap|fmt4 }}).</div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:14px">
+  <div class="card">
+    <h3>Confusion Matrix (Final, Test)</h3>
+    <div class="table-wrap">
+      <table class="cm">
+        <thead><tr><th>Aktual \ Prediksi</th>{% for l in FT.labels %}<th>{{ l }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for row in FT.confusion_matrix %}{% set ri = loop.index0 %}
+          <tr><th>{{ FT.labels[ri] }}</th>{% for v in row %}<td class="{{ 'hit' if loop.index0==ri else '' }}">{{ v }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted small" style="margin-top:8px">Interpretasi: kelas mayoritas (Rendah) diprediksi paling stabil; kelas Tinggi/Sedang lebih sulit karena dukungan kecil dan fitur terbatas tanpa sinyal penjualan.</p>
+  </div>
+  <div class="card">
+    <h3>Classification Report (Final, Test)</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Kelas</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+      <tbody>
+        {% for cls in ['Rendah','Sedang','Tinggi'] %}{% set r = FT.classification_report[cls] %}
+        <tr><td><span class="badge cat-{{ cls|lower }}">{{ cls }}</span></td><td>{{ r['precision']|fmt4 }}</td><td>{{ r['recall']|fmt4 }}</td><td>{{ r['f1-score']|fmt4 }}</td><td>{{ r['support']|int }}</td></tr>
+        {% endfor %}
+        {% set m = FT.classification_report['macro avg'] %}<tr><td><strong>Macro avg</strong></td><td>{{ m['precision']|fmt4 }}</td><td>{{ m['recall']|fmt4 }}</td><td>{{ m['f1-score']|fmt4 }}</td><td>{{ m['support']|int }}</td></tr>
+        {% set w = FT.classification_report['weighted avg'] %}<tr><td><strong>Weighted avg</strong></td><td>{{ w['precision']|fmt4 }}</td><td>{{ w['recall']|fmt4 }}</td><td>{{ w['f1-score']|fmt4 }}</td><td>{{ w['support']|int }}</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3>Eksperimen Pruning (perbandingan)</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nama</th><th>Params</th><th>Train Acc</th><th>Test Acc</th><th>Train F1m</th><th>Test F1m</th><th>Gap Acc</th><th>Overfit</th></tr></thead>
+    <tbody>
+      {% for e in meta.experiments %}
+      <tr style="{{ 'background:rgba(124,58,237,.12)' if e.name==meta.model.final_name else '' }}">
+        <td><strong>{{ e.name }}</strong>{% if e.name==meta.model.final_name %} <span class="badge" style="background:rgba(124,58,237,.2);color:#ddd6fe;border-color:rgba(124,58,237,.4)">final</span>{% endif %}</td>
+        <td class="small muted">{{ e.params }}</td><td>{{ e.train_accuracy }}</td><td>{{ e.test_accuracy }}</td><td>{{ e.train_f1_macro }}</td><td>{{ e.test_f1_macro }}</td><td>{{ e.accuracy_gap }}</td>
+        <td>{{ 'Ya' if e.overfit_warning else 'Tidak' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="muted small" style="margin-top:8px">Pemilihan final mempertimbangkan performa test, stabilitas gap train-test, dan keterbacaan model pada fitur leakage-free. Baseline menunjukkan overfitting jelas (gap besar); model final dipangkas untuk generalisasi lebih baik.</p>
+</div>
+{% endif %}
+{% endblock %}

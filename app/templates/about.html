@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}About Project - Game Sales AI{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div><h1 class="page-title">About Project &amp; Methodology</h1><p class="page-sub">Penerapan Algoritma Decision Tree untuk Klasifikasi Tingkat Penjualan Video Game Berdasarkan Genre dan Platform.</p></div>
+</div>
+
+<div class="split">
+  <div class="card">
+    <h3>Identitas</h3>
+    <ul class="clean">
+      <li><strong>Nama:</strong> Adi Hadianto</li>
+      <li><strong>NIM:</strong> 301240006</li>
+      <li><strong>Kelas:</strong> 5B</li>
+      <li><strong>Mata praktikum:</strong> Pembelajaran Mesin (Modul 05 — Decision Tree)</li>
+    </ul>
+    <h3 style="margin-top:14px">Tujuan & Permasalahan</h3>
+    <p class="small" style="color:#d7e3fb;line-height:1.6">Mengklasifikasikan tingkat penjualan global game menjadi <span class="badge cat-rendah">Rendah</span> <span class="badge cat-sedang">Sedang</span> <span class="badge cat-tinggi">Tinggi</span> berdasarkan karakteristik yang tersedia sebelum/independen dari realisasi penjualan. Hasil adalah estimasi model, bukan kepastian komersial.</p>
+  </div>
+  <div class="card">
+    <h3>Dataset</h3>
+    <ul class="clean small">
+      <li>Sumber: <a href="https://www.kaggle.com/datasets/gregorut/videogamesales" target="_blank" rel="noopener">Kaggle — Video Game Sales (VGChartz, gregorut)</a></li>
+      <li>File: <code class="k">vgsales.csv</code> (16.598 baris, 11 kolom). Duplikat: 0. Missing: Year (271), Publisher (58).</li>
+      <li>Lisensi/ketentuan: ikuti halaman sumber Kaggle sebelum redistribusi.</li>
+    </ul>
+    <h3 style="margin-top:14px">Target (turunan)</h3>
+    <ul class="clean small">
+      <li><span class="badge cat-rendah">Rendah</span> Global_Sales &lt; 0.5 juta kopi</li>
+      <li><span class="badge cat-sedang">Sedang</span> 0.5 ≤ Global_Sales ≤ 2.0 juta kopi</li>
+      <li><span class="badge cat-tinggi">Tinggi</span> Global_Sales &gt; 2.0 juta kopi</li>
+    </ul>
+    <p class="muted small">Ambang adalah aturan kategorisasi proyek (bukan label asli Kaggle); diskretisasi mengurangi informasi numerik.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3>Fitur & Pencegahan Data Leakage</h3>
+  <ul class="clean small">
+    <li><strong>Fitur input:</strong> <code class="k">Platform</code>, <code class="k">Genre</code>, <code class="k">Publisher</code>, <code class="k">Year</code>.</li>
+    <li><strong>Tidak digunakan sebagai fitur:</strong> <code class="k">Global_Sales</code> (hanya pembentuk target), <code class="k">NA/EU/JP/Other_Sales</code> (komponen penjualan → leakage terhadap target), <code class="k">Rank</code>, <code class="k">Name</code>.</li>
+    <li>Rasional: aplikasi bertujuan memprediksi tingkat penjualan dari karakteristik game, bukan dari angka penjualan yang sudah diketahui.</li>
+  </ul>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3>Metodologi</h3>
+  <ol class="clean small" style="list-style:decimal">
+    <li>Audit data: load, <code class="k">head/shape/info</code> ekuivalen, missing, duplikasi.</li>
+    <li>EDA: distribusi target/genre/platform/tahun dan perbandingan kategori (grafik aktual).</li>
+    <li>Preprocessing: imputasi (Year median, Publisher konstanta), <code class="k">OneHotEncoder(handle_unknown="ignore")</code>, <code class="k">ColumnTransformer</code>+<code class="k">Pipeline</code>; fit encoder <em>setelah</em> split.</li>
+    <li>Split: 80:20, <code class="k">random_state=42</code>, <code class="k">stratify=y</code>.</li>
+    <li>Model: baseline <code class="k">DecisionTreeClassifier(criterion="gini")</code> + eksperimen pruning (<code class="k">max_depth</code>, <code class="k">min_samples_split</code>, <code class="k">min_samples_leaf</code>, <code class="k">ccp_alpha</code>), banding train vs test.</li>
+    <li>Evaluasi: accuracy, precision, recall, F1 (macro &amp; weighted), confusion matrix, classification report.</li>
+    <li>Visualisasi pohon (<code class="k">plot_tree</code>, kedalaman tampil dibatasi) + penyimpanan satu artefak pipeline + metadata.</li>
+    <li>Integrasi Flask: memuat pipeline tersimpan; prediksi + probabilitas; validasi &amp; error handling.</li>
+  </ol>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3>Batasan & Kejujuran Akademik</h3>
+  <ul class="clean small">
+    <li>Estimasi berbasis data historis; tidak menjamin keberhasilan komersial game.</li>
+    <li>Kinerja dipengaruhi ketidakseimbangan kelas (Tinggi minoritas) dan keterbatasan fitur; macro-F1 lebih informatif daripada accuracy saja.</li>
+    <li>Tidak ada metrik, grafik, screenshot, atau hasil pengujian palsu. Seluruh angka pada halaman evaluasi berasal dari artefak training aktual.</li>
+  </ul>
+</div>
+{% endblock %}

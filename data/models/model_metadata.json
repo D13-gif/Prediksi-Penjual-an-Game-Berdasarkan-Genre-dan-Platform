@@ -1,0 +1,652 @@
+{
+  "project": "Penerapan Algoritma Decision Tree untuk Klasifikasi Tingkat Penjualan Video Game Berdasarkan Genre dan Platform",
+  "identity": {
+    "name": "Adi Hadianto",
+    "nim": "301240006",
+    "class": "5B"
+  },
+  "dataset": {
+    "source": "Kaggle VGChartz - gregorut/videogamesales",
+    "url": "https://www.kaggle.com/datasets/gregorut/videogamesales",
+    "file": "vgsales.csv"
+  },
+  "audit": {
+    "shape": [
+      16598,
+      11
+    ],
+    "missing": {
+      "Rank": 0,
+      "Name": 0,
+      "Platform": 0,
+      "Year": 271,
+      "Genre": 0,
+      "Publisher": 58,
+      "NA_Sales": 0,
+      "EU_Sales": 0,
+      "JP_Sales": 0,
+      "Other_Sales": 0,
+      "Global_Sales": 0
+    },
+    "duplicates": 0,
+    "year_min": 1980.0,
+    "year_max": 2020.0,
+    "head": [
+      {
+        "Rank": 1,
+        "Name": "Wii Sports",
+        "Platform": "Wii",
+        "Year": 2006.0,
+        "Genre": "Sports",
+        "Publisher": "Nintendo",
+        "NA_Sales": 41.49,
+        "EU_Sales": 29.02,
+        "JP_Sales": 3.77,
+        "Other_Sales": 8.46,
+        "Global_Sales": 82.74
+      },
+      {
+        "Rank": 2,
+        "Name": "Super Mario Bros.",
+        "Platform": "NES",
+        "Year": 1985.0,
+        "Genre": "Platform",
+        "Publisher": "Nintendo",
+        "NA_Sales": 29.08,
+        "EU_Sales": 3.58,
+        "JP_Sales": 6.81,
+        "Other_Sales": 0.77,
+        "Global_Sales": 40.24
+      },
+      {
+        "Rank": 3,
+        "Name": "Mario Kart Wii",
+        "Platform": "Wii",
+        "Year": 2008.0,
+        "Genre": "Racing",
+        "Publisher": "Nintendo",
+        "NA_Sales": 15.85,
+        "EU_Sales": 12.88,
+        "JP_Sales": 3.79,
+        "Other_Sales": 3.31,
+        "Global_Sales": 35.82
+      },
+      {
+        "Rank": 4,
+        "Name": "Wii Sports Resort",
+        "Platform": "Wii",
+        "Year": 2009.0,
+        "Genre": "Sports",
+        "Publisher": "Nintendo",
+        "NA_Sales": 15.75,
+        "EU_Sales": 11.01,
+        "JP_Sales": 3.28,
+        "Other_Sales": 2.96,
+        "Global_Sales": 33.0
+      },
+      {
+        "Rank": 5,
+        "Name": "Pokemon Red/Pokemon Blue",
+        "Platform": "GB",
+        "Year": 1996.0,
+        "Genre": "Role-Playing",
+        "Publisher": "Nintendo",
+        "NA_Sales": 11.27,
+        "EU_Sales": 8.89,
+        "JP_Sales": 10.22,
+        "Other_Sales": 1.0,
+        "Global_Sales": 31.37
+      }
+    ]
+  },
+  "cleaning": {
+    "rows_before": 16598,
+    "rows_after": 16598,
+    "year_missing": 271,
+    "publisher_missing": 58,
+    "target_missing": 0,
+    "rows_after_target_drop": 16598,
+    "dropped_rows": 0
+  },
+  "target": {
+    "column": "Sales_Category",
+    "derived_from": "Global_Sales",
+    "labels": [
+      "Rendah",
+      "Sedang",
+      "Tinggi"
+    ],
+    "rules": {
+      "Rendah": "Global_Sales < 0.5 (juta kopi)",
+      "Sedang": "0.5 <= Global_Sales <= 2.0 (juta kopi)",
+      "Tinggi": "Global_Sales > 2.0 (juta kopi)"
+    },
+    "note": "Global_Sales dan penjualan regional TIDAK digunakan sebagai fitur (anti data leakage)."
+  },
+  "features": {
+    "used": [
+      "Platform",
+      "Genre",
+      "Publisher",
+      "Year"
+    ],
+    "excluded": [
+      "Global_Sales",
+      "NA_Sales",
+      "EU_Sales",
+      "JP_Sales",
+      "Other_Sales",
+      "Rank",
+      "Name"
+    ],
+    "rationale": "Prediksi berbasis karakteristik game (genre/platform/publisher/tahun) sebelum/independen dari angka penjualan."
+  },
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "stratify": true,
+    "train_rows": 13278,
+    "test_rows": 3320,
+    "train_dist": {
+      "Rendah": {
+        "count": 10064,
+        "pct": 75.79
+      },
+      "Sedang": {
+        "count": 2537,
+        "pct": 19.11
+      },
+      "Tinggi": {
+        "count": 677,
+        "pct": 5.1
+      }
+    },
+    "test_dist": {
+      "Rendah": {
+        "count": 2516,
+        "pct": 75.78
+      },
+      "Sedang": {
+        "count": 635,
+        "pct": 19.13
+      },
+      "Tinggi": {
+        "count": 169,
+        "pct": 5.09
+      }
+    }
+  },
+  "model": {
+    "algorithm": "DecisionTreeClassifier",
+    "criterion": "gini",
+    "random_state": 42,
+    "baseline_params": {
+      "max_depth": null,
+      "min_samples_split": 2,
+      "min_samples_leaf": 1,
+      "ccp_alpha": 0.0
+    },
+    "final_name": "depth_8",
+    "final_params": {
+      "max_depth": 8,
+      "min_samples_split": 2,
+      "min_samples_leaf": 1,
+      "ccp_alpha": 0.0
+    }
+  },
+  "experiments": [
+    {
+      "name": "baseline_unpruned",
+      "params": {
+        "max_depth": null,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.906914,
+      "test_accuracy": 0.737952,
+      "train_f1_macro": 0.795625,
+      "test_f1_macro": 0.46263,
+      "accuracy_gap": 0.168962,
+      "f1_macro_gap": 0.332995,
+      "overfit_warning": true
+    },
+    {
+      "name": "depth_4",
+      "params": {
+        "max_depth": 4,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.762991,
+      "test_accuracy": 0.759639,
+      "train_f1_macro": 0.351316,
+      "test_f1_macro": 0.326883,
+      "accuracy_gap": 0.003353,
+      "f1_macro_gap": 0.024433,
+      "overfit_warning": false
+    },
+    {
+      "name": "depth_6",
+      "params": {
+        "max_depth": 6,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.771502,
+      "test_accuracy": 0.760241,
+      "train_f1_macro": 0.452366,
+      "test_f1_macro": 0.406463,
+      "accuracy_gap": 0.011261,
+      "f1_macro_gap": 0.045903,
+      "overfit_warning": false
+    },
+    {
+      "name": "depth_8",
+      "params": {
+        "max_depth": 8,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.781594,
+      "test_accuracy": 0.762349,
+      "train_f1_macro": 0.46254,
+      "test_f1_macro": 0.385431,
+      "accuracy_gap": 0.019244,
+      "f1_macro_gap": 0.077108,
+      "overfit_warning": true
+    },
+    {
+      "name": "leaf_5",
+      "params": {
+        "max_depth": null,
+        "min_samples_split": 2,
+        "min_samples_leaf": 5,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.815635,
+      "test_accuracy": 0.753614,
+      "train_f1_macro": 0.58804,
+      "test_f1_macro": 0.458659,
+      "accuracy_gap": 0.06202,
+      "f1_macro_gap": 0.129382,
+      "overfit_warning": true
+    },
+    {
+      "name": "leaf_10",
+      "params": {
+        "max_depth": null,
+        "min_samples_split": 2,
+        "min_samples_leaf": 10,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.796204,
+      "test_accuracy": 0.761747,
+      "train_f1_macro": 0.520563,
+      "test_f1_macro": 0.438244,
+      "accuracy_gap": 0.034457,
+      "f1_macro_gap": 0.082319,
+      "overfit_warning": true
+    },
+    {
+      "name": "depth8_leaf5_split10",
+      "params": {
+        "max_depth": 8,
+        "min_samples_split": 10,
+        "min_samples_leaf": 5,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.777828,
+      "test_accuracy": 0.762048,
+      "train_f1_macro": 0.455255,
+      "test_f1_macro": 0.401789,
+      "accuracy_gap": 0.01578,
+      "f1_macro_gap": 0.053466,
+      "overfit_warning": true
+    },
+    {
+      "name": "depth6_leaf5",
+      "params": {
+        "max_depth": 6,
+        "min_samples_split": 2,
+        "min_samples_leaf": 5,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.770071,
+      "test_accuracy": 0.759639,
+      "train_f1_macro": 0.446395,
+      "test_f1_macro": 0.408568,
+      "accuracy_gap": 0.010432,
+      "f1_macro_gap": 0.037827,
+      "overfit_warning": false
+    },
+    {
+      "name": "depth10_leaf10",
+      "params": {
+        "max_depth": 10,
+        "min_samples_split": 5,
+        "min_samples_leaf": 10,
+        "ccp_alpha": 0.0
+      },
+      "train_accuracy": 0.781744,
+      "test_accuracy": 0.76506,
+      "train_f1_macro": 0.469457,
+      "test_f1_macro": 0.413402,
+      "accuracy_gap": 0.016684,
+      "f1_macro_gap": 0.056055,
+      "overfit_warning": true
+    },
+    {
+      "name": "ccp_0.0005",
+      "params": {
+        "max_depth": null,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "ccp_alpha": 0.0005
+      },
+      "train_accuracy": 0.767435,
+      "test_accuracy": 0.761446,
+      "train_f1_macro": 0.431362,
+      "test_f1_macro": 0.418912,
+      "accuracy_gap": 0.005989,
+      "f1_macro_gap": 0.012449,
+      "overfit_warning": false
+    },
+    {
+      "name": "ccp_0.001",
+      "params": {
+        "max_depth": null,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "ccp_alpha": 0.001
+      },
+      "train_accuracy": 0.758021,
+      "test_accuracy": 0.75753,
+      "train_f1_macro": 0.292591,
+      "test_f1_macro": 0.28949,
+      "accuracy_gap": 0.000491,
+      "f1_macro_gap": 0.003101,
+      "overfit_warning": false
+    }
+  ],
+  "results": {
+    "baseline": {
+      "train": {
+        "accuracy": 0.9069136918210574,
+        "precision_macro": 0.9038549942367903,
+        "recall_macro": 0.7344316423401219,
+        "f1_macro": 0.7956248447917834,
+        "precision_weighted": 0.9056405347316131,
+        "recall_weighted": 0.9069136918210574,
+        "f1_weighted": 0.9006977171547179,
+        "confusion_matrix": [
+          [
+            9898,
+            154,
+            12
+          ],
+          [
+            726,
+            1798,
+            13
+          ],
+          [
+            204,
+            127,
+            346
+          ]
+        ],
+        "labels": [
+          "Rendah",
+          "Sedang",
+          "Tinggi"
+        ],
+        "classification_report": {
+          "Rendah": {
+            "precision": 0.9141115626154415,
+            "recall": 0.9835055643879174,
+            "f1-score": 0.9475397281255983,
+            "support": 10064.0
+          },
+          "Sedang": {
+            "precision": 0.8648388648388649,
+            "recall": 0.7087110760741032,
+            "f1-score": 0.7790294627383015,
+            "support": 2537.0
+          },
+          "Tinggi": {
+            "precision": 0.9326145552560647,
+            "recall": 0.5110782865583456,
+            "f1-score": 0.6603053435114504,
+            "support": 677.0
+          },
+          "accuracy": 0.9069136918210574,
+          "macro avg": {
+            "precision": 0.9038549942367903,
+            "recall": 0.7344316423401219,
+            "f1-score": 0.7956248447917834,
+            "support": 13278.0
+          },
+          "weighted avg": {
+            "precision": 0.9056405347316131,
+            "recall": 0.9069136918210574,
+            "f1-score": 0.9006977171547179,
+            "support": 13278.0
+          }
+        }
+      },
+      "test": {
+        "accuracy": 0.7379518072289156,
+        "precision_macro": 0.49191947394002195,
+        "recall_macro": 0.4486841665699399,
+        "f1_macro": 0.462630031765247,
+        "precision_weighted": 0.7106296594936944,
+        "recall_weighted": 0.7379518072289156,
+        "f1_weighted": 0.7219495524771191,
+        "confusion_matrix": [
+          [
+            2226,
+            256,
+            34
+          ],
+          [
+            404,
+            199,
+            32
+          ],
+          [
+            71,
+            73,
+            25
+          ]
+        ],
+        "labels": [
+          "Rendah",
+          "Sedang",
+          "Tinggi"
+        ],
+        "classification_report": {
+          "Rendah": {
+            "precision": 0.8241392077008516,
+            "recall": 0.884737678855326,
+            "f1-score": 0.8533640023001725,
+            "support": 2516.0
+          },
+          "Sedang": {
+            "precision": 0.3768939393939394,
+            "recall": 0.31338582677165355,
+            "f1-score": 0.3422184006878762,
+            "support": 635.0
+          },
+          "Tinggi": {
+            "precision": 0.27472527472527475,
+            "recall": 0.14792899408284024,
+            "f1-score": 0.19230769230769232,
+            "support": 169.0
+          },
+          "accuracy": 0.7379518072289156,
+          "macro avg": {
+            "precision": 0.49191947394002195,
+            "recall": 0.4486841665699399,
+            "f1-score": 0.462630031765247,
+            "support": 3320.0
+          },
+          "weighted avg": {
+            "precision": 0.7106296594936944,
+            "recall": 0.7379518072289156,
+            "f1-score": 0.7219495524771191,
+            "support": 3320.0
+          }
+        }
+      },
+      "comparison": {
+        "accuracy_gap": 0.1689618845921418,
+        "f1_macro_gap": 0.33299481302653644,
+        "overfit_warning": true
+      }
+    },
+    "final": {
+      "train": {
+        "accuracy": 0.7815936134960084,
+        "precision_macro": 0.719948537995513,
+        "recall_macro": 0.43294799785532495,
+        "f1_macro": 0.4625395407680564,
+        "precision_weighted": 0.752722277323204,
+        "recall_weighted": 0.7815936134960084,
+        "f1_weighted": 0.7331933680658989,
+        "confusion_matrix": [
+          [
+            9764,
+            292,
+            8
+          ],
+          [
+            1992,
+            534,
+            11
+          ],
+          [
+            456,
+            141,
+            80
+          ]
+        ],
+        "labels": [
+          "Rendah",
+          "Sedang",
+          "Tinggi"
+        ],
+        "classification_report": {
+          "Rendah": {
+            "precision": 0.7995414346544383,
+            "recall": 0.9701907790143084,
+            "f1-score": 0.8766385347459149,
+            "support": 10064.0
+          },
+          "Sedang": {
+            "precision": 0.5522233712512926,
+            "recall": 0.2104848245959795,
+            "f1-score": 0.3047945205479452,
+            "support": 2537.0
+          },
+          "Tinggi": {
+            "precision": 0.8080808080808081,
+            "recall": 0.11816838995568685,
+            "f1-score": 0.20618556701030927,
+            "support": 677.0
+          },
+          "accuracy": 0.7815936134960084,
+          "macro avg": {
+            "precision": 0.719948537995513,
+            "recall": 0.43294799785532495,
+            "f1-score": 0.4625395407680564,
+            "support": 13278.0
+          },
+          "weighted avg": {
+            "precision": 0.752722277323204,
+            "recall": 0.7815936134960084,
+            "f1-score": 0.7331933680658989,
+            "support": 13278.0
+          }
+        }
+      },
+      "test": {
+        "accuracy": 0.7623493975903615,
+        "precision_macro": 0.4964680685855158,
+        "recall_macro": 0.3845499141113207,
+        "f1_macro": 0.38543147593975147,
+        "precision_weighted": 0.6957187728352493,
+        "recall_weighted": 0.7623493975903615,
+        "f1_weighted": 0.7056707031952305,
+        "confusion_matrix": [
+          [
+            2424,
+            85,
+            7
+          ],
+          [
+            526,
+            102,
+            7
+          ],
+          [
+            117,
+            47,
+            5
+          ]
+        ],
+        "labels": [
+          "Rendah",
+          "Sedang",
+          "Tinggi"
+        ],
+        "classification_report": {
+          "Rendah": {
+            "precision": 0.7903488751222694,
+            "recall": 0.9634340222575517,
+            "f1-score": 0.8683503492745835,
+            "support": 2516.0
+          },
+          "Sedang": {
+            "precision": 0.4358974358974359,
+            "recall": 0.16062992125984252,
+            "f1-score": 0.23475258918296893,
+            "support": 635.0
+          },
+          "Tinggi": {
+            "precision": 0.2631578947368421,
+            "recall": 0.029585798816568046,
+            "f1-score": 0.05319148936170213,
+            "support": 169.0
+          },
+          "accuracy": 0.7623493975903615,
+          "macro avg": {
+            "precision": 0.4964680685855158,
+            "recall": 0.3845499141113207,
+            "f1-score": 0.38543147593975147,
+            "support": 3320.0
+          },
+          "weighted avg": {
+            "precision": 0.6957187728352493,
+            "recall": 0.7623493975903615,
+            "f1-score": 0.7056707031952305,
+            "support": 3320.0
+          }
+        }
+      },
+      "comparison": {
+        "accuracy_gap": 0.019244215905646955,
+        "f1_macro_gap": 0.07710806482830496,
+        "overfit_warning": true
+      }
+    }
+  },
+  "artifacts": {
+    "pipeline": "decision_tree_pipeline.joblib",
+    "tree_image": "decision_tree_viz.png"
+  },
+  "trained_at_utc": "2026-11-09T11:33:29.971691+00:00"
+}

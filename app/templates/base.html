@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Game Sales Prediction{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">🎮</div>
+      <div><div class="brand-title">GameSales AI</div><div class="brand-sub">Decision Tree Analytics</div></div>
+    </div>
+    <nav class="nav" aria-label="Navigasi utama">
+      <a href="{{ url_for('dashboard') }}" class="{% if request.path in ['/', '/dashboard'] %}active{% endif %}">📊 <span>Dashboard</span></a>
+      <a href="{{ url_for('predict') }}" class="{% if request.path == '/predict' %}active{% endif %}">🎯 <span>Prediction</span></a>
+      <a href="{{ url_for('dataset') }}" class="{% if request.path == '/dataset' %}active{% endif %}">🗂️ <span>Dataset Exploration</span></a>
+      <a href="{{ url_for('evaluation') }}" class="{% if request.path == '/evaluation' %}active{% endif %}">📈 <span>Model Evaluation</span></a>
+      <a href="{{ url_for('tree') }}" class="{% if request.path == '/tree' %}active{% endif %}">🌳 <span>Decision Tree</span></a>
+      <a href="{{ url_for('about') }}" class="{% if request.path == '/about' %}active{% endif %}">ℹ️ <span>About Project</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <strong>{{ identity.name }}</strong><br>NIM {{ identity.nim }} · Kelas {{ identity.class }}<br>
+      <span class="muted">Pembelajaran Mesin — Decision Tree</span>
+    </div>
+  </aside>
+  <main class="main">
+    {% block content %}{% endblock %}
+    <div class="footer-note">Proyek portofolio & pembelajaran. Prediksi bersifat estimasi berbasis data historis.</div>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

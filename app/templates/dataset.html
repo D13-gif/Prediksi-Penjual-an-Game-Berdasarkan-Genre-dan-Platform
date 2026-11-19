@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Dataset Exploration - Game Sales AI{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div><h1 class="page-title">Dataset Exploration (EDA)</h1><p class="page-sub">Audit, distribusi, dan interpretasi berbasis data aktual <code class="k">vgsales.csv</code>.</p></div>
+</div>
+
+{% if data.dataset_error %}
+<div class="alert alert-error">{{ data.dataset_error }}</div>
+{% else %}
+<div class="grid grid-kpi">
+  <div class="card kpi"><div class="label">Shape</div><div class="value">{{ data.total_rows|comma }} × 11</div><div class="hint">Duplikat: {{ data.duplicates }}</div></div>
+  <div class="card kpi"><div class="label">Missing</div><div class="value">{{ data.missing.get('Year',0) + data.missing.get('Publisher',0) }}</div><div class="hint">Year {{ data.missing.get('Year',0) }}, Publisher {{ data.missing.get('Publisher',0) }}</div></div>
+  <div class="card kpi"><div class="label">Rentang Tahun</div><div class="value">{{ data.audit.year_min|int if data.audit and data.audit.year_min else '-' }}–{{ data.audit.year_max|int if data.audit and data.audit.year_max else '-' }}</div><div class="hint">Year numerik; missing diimputasi di pipeline</div></div>
+  <div class="card kpi"><div class="label">Target</div><div class="value">3 kelas</div><div class="hint">Rendah/Sedang/Tinggi (turunan)</div></div>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3>Ringkasan & catatan pembersihan</h3>
+  <ul class="clean small">
+    <li>Dataset dimuat dari Kaggle VGChartz (<code class="k">vgsales.csv</code>). Kolom utama: Rank, Name, Platform, Year, Genre, Publisher, NA/EU/JP/Other/Global_Sales.</li>
+    <li>Missing: Year (271), Publisher (58). Duplikat: 0. Target <code class="k">Sales_Category</code> tidak memiliki missing setelah pembentukan.</li>
+    <li>Strategi preprocessing (di dalam pipeline, fit pada train): Publisher → imputasi konstanta “Unknown”; Year → imputasi median; kategorikal → One-Hot (<code class="k">handle_unknown="ignore"</code>).</li>
+    <li><strong>Data leakage dicegah:</strong> <code class="k">Global_Sales</code> dan penjualan regional tidak dipakai sebagai fitur. Fitur model: Platform, Genre, Publisher, Year.</li>
+  </ul>
+</div>
+
+<div class="grid grid-2" style="margin-top:14px">
+  <div class="card"><h3>Distribusi Sales_Category</h3><div class="chart-box"><canvas id="eTarget"></canvas></div>
+    <p class="muted small">Interpretasi (aktual): mayoritas game berada pada kategori <strong>Rendah</strong> ({{ data.target_pct.Rendah }}%), diikuti Sedang ({{ data.target_pct.Sedang }}%) dan Tinggi ({{ data.target_pct.Tinggi }}%). Ketidakseimbangan kelas relevan untuk evaluasi (macro-F1).</p></div>
+  <div class="card"><h3>Jumlah game per Genre</h3><div class="chart-box"><canvas id="eGenre"></canvas></div></div>
+  <div class="card"><h3>Jumlah game per Platform (Top)</h3><div class="chart-box"><canvas id="ePlatform"></canvas></div></div>
+  <div class="card"><h3>Distribusi Tahun Rilis</h3><div class="chart-box"><canvas id="eYear"></canvas></div></div>
+  <div class="card"><h3>Kategori Penjualan menurut Genre (Top)</h3><div class="chart-box tall"><canvas id="eCatGenre"></canvas></div></div>
+  <div class="card"><h3>Kategori Penjualan menurut Platform (Top)</h3><div class="chart-box tall"><canvas id="eCatPlatform"></canvas></div></div>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3>Cuplikan data (head, 25 baris/halaman)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Rank</th><th>Name</th><th>Platform</th><th>Year</th><th>Genre</th><th>Publisher</th><th>Global_Sales</th><th>Sales_Category</th></tr></thead>
+      <tbody>
+        {% for r in pager.rows %}
+        <tr>
+          <td>{{ r.Rank }}</td><td>{{ r.Name }}</td><td>{{ r.Platform }}</td><td>{{ r.Year }}</td><td>{{ r.Genre }}</td><td>{{ r.Publisher }}</td><td>{{ r.Global_Sales }}</td>
+          <td><span class="badge cat-{{ r.Sales_Category|lower }}">{{ r.Sales_Category }}</span></td>
+        </tr>
+        {% else %}<tr><td colspan="8" class="muted">Data tidak tersedia.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="pager">
+    {% if pager.page > 1 %}<a href="{{ url_for('dataset', page=pager.page-1) }}">Prev</a>{% endif %}
+    <span>Halaman {{ pager.page }} / {{ pager.total_pages }} ({{ pager.total|comma }} baris)</span>
+    {% if pager.page < pager.total_pages %}<a href="{{ url_for('dataset', page=pager.page+1) }}">Next</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+const D = {{ charts|tojson }};
+const catC = {Rendah:'#22c55e', Sedang:'#f59e0b', Tinggi:'#ef4444'};
+const opt = {responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#cfe0ff'}}}, scales:{x:{ticks:{color:'#94a3b8',maxRotation:45},grid:{color:'rgba(148,163,184,.1)'}}, y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(148,163,184,.1)'}}}};
+const optStack = {...opt, scales:{...opt.scales, x:{...opt.scales.x, stacked:true}, y:{...opt.scales.y, stacked:true}}};
+new Chart(eTarget,{type:'doughnut',data:{labels:Object.keys(D.target),datasets:[{data:Object.values(D.target),backgroundColor:Object.keys(D.target).map(k=>catC[k]),borderColor:'#162033'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#cfe0ff'}}}}});
+new Chart(eGenre,{type:'bar',data:{labels:Object.keys(D.by_genre),datasets:[{data:Object.values(D.by_genre),backgroundColor:'rgba(124,58,237,.65)',borderRadius:5}]},options:{...opt,plugins:{legend:{display:false}}}});
+new Chart(ePlatform,{type:'bar',data:{labels:Object.keys(D.by_platform),datasets:[{data:Object.values(D.by_platform),backgroundColor:'rgba(56,189,248,.55)',borderRadius:5}]},options:{...opt,plugins:{legend:{display:false}}}});
+new Chart(eYear,{type:'line',data:{labels:Object.keys(D.by_year),datasets:[{data:Object.values(D.by_year),borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.12)',fill:true,pointRadius:0,tension:.2}]},options:{...opt,plugins:{legend:{display:false}}}});
+function stack(obj){const labels=Object.keys(obj); return {labels, datasets:['Rendah','Sedang','Tinggi'].map(c=>({label:c,data:labels.map(l=>(obj[l]&&obj[l][c])||0),backgroundColor:catC[c],borderRadius:3}))};}
+const cg=stack(D.cat_genre); new Chart(eCatGenre,{type:'bar',data:cg,options:optStack});
+const cp=stack(D.cat_platform); new Chart(eCatPlatform,{type:'bar',data:cp,options:optStack});
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+Audit test log — 2026-11-09
+Workspace application: http://127.0.0.1:5000
+
+INITIAL OBSERVATIONS
+- GET /, /predict, /dataset, /evaluation, /tree, /about: HTTP 200
+- GET /api/health: {"status":"ok","model_ready":true,"load_error":null}
+- GET unknown path: HTTP 404
+- Initial target boundary: 0.499999=Rendah; 0.5=Rendah; 0.500001=Sedang; 2.0=Sedang; 2.000001=Tinggi
+- Exact Global_Sales == 0.5 rows: 71
+- Initial final test metrics: accuracy=0.7689759; weighted precision=0.7082671; weighted recall=0.7689759; weighted F1=0.7096158; macro-F1=0.3979482
+- Initial fractional input Year=2015.6 was accepted and rounded.
+
+TRAINING AFTER TARGET CORRECTION
+Command: python train_model.py
+Output summary:
+  Shape: (16598, 11), duplicates: 0
+  Target distribution: Rendah=12580, Sedang=3172, Tinggi=846
+  Split: train=13278, test=3320, stratified, random_state=42
+  Selected: depth_8; max_depth=8, min_samples_split=2, min_samples_leaf=1, ccp_alpha=0.0
+  Baseline test accuracy=0.7379518; macro-F1=0.4626300
+  Final test accuracy=0.7623494; macro-F1=0.3854315
+  Saved data/models/decision_tree_pipeline.joblib and model_metadata.json
+  Final pipeline reloaded successfully; model depth=8, 158 leaves.
+  Final confusion matrix: [[2424,85,7],[526,102,7],[117,47,5]]
+  Final class-Tinggi recall=0.0295858 (5/169)
+
+AUTOMATED TESTS
+Command: python -m unittest discover -s tests -v
+Result: Ran 7 tests; OK.
+  test_fractional_year_is_rejected
+  test_missing_required_input_is_rejected
+  test_nan_year_is_rejected
+  test_out_of_range_year_is_rejected
+  test_unknown_categories_remain_supported
+  test_missing_sales_remains_unclassified
+  test_sales_categories_follow_inclusive_project_thresholds
+
+BACKEND/SECURITY RETEST
+- Correct target boundaries: 0.499999=Rendah; 0.5=Sedang; 0.500001=Sedang; 2.0=Sedang; 2.000001=Tinggi
+- Valid unknown platform/genre/publisher prediction: HTTP 200 and result rendered.
+- Missing, non-numeric, NaN, fractional, and out-of-range years: HTTP 200 with inline validation error; no prediction produced.
+- Missing dataset in temporary app: health status=degraded; dataset_ready=false; Dashboard, Prediction, Dataset HTTP 200 with explanation.
+- Missing model in temporary app: health status=degraded; model_ready=false; Prediction explains how to restore model.
+- Controlled script-like values in form are HTML-escaped. Controlled chart JSON payload uses Jinja tojson; raw closing-script injection absent.
+- Controlled internal RuntimeError is logged; UI shows generic error, internal exception text not reflected.
+- Invalid high dataset page clamps to final page (664 / 664).
+- Prediction latency (50 service calls): median=15.372 ms, P95=18.499 ms, max=31.774 ms.
+- Prediction GET rendering (20 test-client calls): median=11.423 ms, P95=13.346 ms, max=100.325 ms including warm-up.
+
+BROWSER RETEST
+- Dashboard, Prediction, Dataset, Evaluation, Tree, About: HTTP 200.
+- Six navigation links opened their corresponding pages.
+- Dashboard Chart.js: 4 chart instances at desktop/tablet/phone; no JavaScript page errors.
+- Responsive viewport 1440x900: dashboard and prediction horizontal overflow=false; form columns=2.
+- Responsive viewport 900x1024: dashboard and prediction horizontal overflow=false; form columns=2.
+- Responsive viewport 390x844: dashboard and prediction horizontal overflow=false; form columns=1.
+- Dataset Next to page 2 and Prev back to page 1: succeeded; 25 rows shown per page.
+- Reset after prediction: returned to blank form; previous result cleared.
+- Tree zoom in/out toggled; decision_tree_viz.png download returned HTTP 200 and image/png.
+- Valid PS4/Action/Nintendo/2015 prediction rendered Rendah with three probabilities and disclaimer.
+- Screenshot files saved: dashboard.png, prediction.png, dataset.png, evaluation.png, tree.png, about.png, dashboard-mobile.png.
+
+NOTES
+- The baseline dashboard screenshot was displayed during the initial audit session but was not persisted as a PNG. Post-fix screenshots above are persisted under docs/screenshots/.
+- Missing-file tests used temporary copies/directories; project dataset/model files were not deleted.

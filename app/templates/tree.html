@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Decision Tree Visualization - Game Sales AI{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div><h1 class="page-title">Decision Tree Visualization</h1><p class="page-sub">Visualisasi pohon terlatih (fitur leakage-free) dan feature importance.</p></div>
+</div>
+
+<div class="card">
+  <h3>Informasi model</h3>
+  {% if meta and meta.model %}
+  <ul class="clean small">
+    <li>Model: <code class="k">{{ meta.model.algorithm }}</code>, criterion=<code class="k">{{ meta.model.criterion }}</code>, final=<code class="k">{{ meta.model.final_name }}</code>.</li>
+    <li>Parameter final: <code class="k">{{ meta.model.final_params }}</code>. Fitur: {{ meta.features.used|join(', ') }}.</li>
+  </ul>
+  {% else %}<div class="muted">Metadata tidak tersedia.</div>{% endif %}
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3>Visualisasi pohon (dipotong untuk keterbacaan)</h3>
+  {% if tree_image %}
+  <div class="tree-panel">
+    <div class="toolbar">
+      <span class="muted small">Klik gambar untuk zoom in/out. <a href="{{ url_for('tree_image') }}" download>Unduh PNG</a></span>
+    </div>
+    <div class="tree-viewport"><img src="{{ url_for('tree_image') }}" alt="Visualisasi Decision Tree (depth terbatas untuk keterbacaan)"></div>
+  </div>
+  <div class="alert alert-info" style="margin-top:10px">Visualisasi dibatasi kedalaman tampil agar terbaca. <strong>Model tersimpan</strong> tetap menggunakan konfigurasi final hasil training (bukan dibatasi oleh kedalaman tampilan).</div>
+  {% else %}
+  <div class="alert alert-warn">Gambar pohon belum tersedia. Jalankan <code class="k">python train_model.py</code>.</div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3>Feature Importance (Top 20, dari model final)</h3>
+  {% if importance %}
+  <div class="prob-list">
+    {% for it in importance %}
+    <div class="prob-row" style="grid-template-columns:220px 1fr 80px">
+      <span class="small" style="overflow:hidden;text-overflow:ellipsis" title="{{ it.feature }}">{{ it.feature }}</span>
+      <div class="bar"><span style="width:{{ (it.importance * 100)|round(2) }}%"></span></div>
+      <span class="small">{{ (it.importance * 100)|round(3) }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="muted small" style="margin-top:8px">Importance dihitung dari impurity reduction (Gini) pada fitur hasil preprocessing (one-hot platform/genre/publisher + year). Tanpa fitur penjualan.</p>
+  {% else %}<div class="muted">Importance tidak tersedia (model belum dimuat).</div>{% endif %}
+</div>
+{% endblock %}

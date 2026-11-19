@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Prediction - Game Sales AI{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div><h1 class="page-title">Prediksi Kategori Penjualan</h1><p class="page-sub">Input fitur game (tanpa data penjualan) untuk mengestimasi kategori <code class="k">Sales_Category</code>.</p></div>
+  <span class="status-pill {{ 'ok' if model_ready else 'err' }}">{{ 'Model siap' if model_ready else 'Model belum siap' }}</span>
+</div>
+
+{% if load_error %}<div class="alert alert-error"><strong>Model tidak tersedia.</strong> {{ load_error }}</div>{% endif %}
+{% if dataset_error %}<div class="alert alert-error"><strong>Dataset tidak tersedia.</strong> {{ dataset_error }}</div>{% endif %}
+{% for e in errors %}<div class="alert alert-error">{{ e }}</div>{% endfor %}
+
+<div class="split">
+  <section class="card">
+    <h3>Form Input (fitur final model)</h3>
+    <form method="POST" action="{{ url_for('predict') }}" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="Platform">Platform <span class="req">*</span></label>
+          <input id="Platform" name="Platform" list="platform-options" required value="{{ form.Platform }}" placeholder="Pilih atau ketik platform" autocomplete="off">
+          <datalist id="platform-options">{% for v in options.Platform %}<option value="{{ v }}">{% endfor %}</datalist>
+          <div class="help">Contoh: PS4, X360, Wii, PC.</div>
+        </div>
+        <div class="field">
+          <label for="Genre">Genre <span class="req">*</span></label>
+          <input id="Genre" name="Genre" list="genre-options" required value="{{ form.Genre }}" placeholder="Pilih atau ketik genre" autocomplete="off">
+          <datalist id="genre-options">{% for v in options.Genre %}<option value="{{ v }}">{% endfor %}</datalist>
+        </div>
+        <div class="field">
+          <label for="Publisher">Publisher <span class="req">*</span></label>
+          <input id="Publisher" name="Publisher" list="publisher-options" required value="{{ form.Publisher }}" placeholder="Ketik nama publisher" autocomplete="off">
+          <datalist id="publisher-options">{% for v in options.Publisher %}<option value="{{ v }}">{% endfor %}</datalist>
+          <div class="help">Ketik untuk mencari dari publisher historis, atau masukkan kategori baru; encoder menangani kategori tak dikenal.</div>
+        </div>
+        <div class="field">
+          <label for="Year">Year of Release <span class="req">*</span></label>
+          <input id="Year" name="Year" type="number" min="1970" max="2035" step="1" required value="{{ form.Year or '' }}" placeholder="contoh: 2010">
+          <div class="help">Rentang wajar 1970–2035. Nilai kosong pada data historis diimputasi saat training.</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="submit" {% if not model_ready %}disabled aria-disabled="true"{% endif %}>Prediksi</button>
+        <a class="btn" href="{{ url_for('predict') }}">Reset</a>
+      </div>
+    </form>
+    <div class="alert alert-info" style="margin-top:14px"><strong>Catatan pencegahan data leakage:</strong> Form ini sengaja tidak meminta NA/EU/JP/Other/Global Sales. Model memprediksi dari karakteristik game (genre/platform/publisher/tahun).</div>
+  </section>
+
+  <section class="card">
+    <h3>Hasil Prediksi</h3>
+    {% if result %}
+      <div class="result-hero">
+        <div>
+          <div class="muted small">Kategori prediksi</div>
+          <div style="font-size:1.4rem;font-weight:800;margin-top:2px"><span class="badge cat-{{ result.prediction|lower }}">{{ result.prediction }}</span></div>
+        </div>
+        <div>
+          <div class="muted small">Probabilitas estimasi kelas terpilih</div>
+          <div style="font-size:1.2rem;font-weight:750">{{ (result.confidence * 100)|round(2) }}%</div>
+        </div>
+      </div>
+      <div class="prob-list" aria-label="Probabilitas tiap kelas">
+        {% for cls, prob in result.probabilities.items() %}
+        <div class="prob-row">
+          <span class="badge cat-{{ cls|lower }}">{{ cls }}</span>
+          <div class="bar" role="img" aria-label="{{ cls }} {{ (prob*100)|round(2) }}%"><span style="width:{{ (prob*100)|round(2) }}%"></span></div>
+          <span>{{ (prob*100)|round(2) }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="alert alert-warn" style="margin-top:12px">{{ result.disclaimer }}</div>
+      <div class="muted small">Probabilitas menunjukkan proporsi kelas pada daun pohon model; bukan jaminan hasil penjualan.</div>
+      <div class="muted small">Input: Platform={{ result.input_data.Platform }}, Genre={{ result.input_data.Genre }}, Publisher={{ result.input_data.Publisher }}, Year={{ result.input_data.Year }}.</div>
+    {% elif not errors %}
+      <div class="muted">Belum ada prediksi. Isi form lalu klik <strong>Prediksi</strong>.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

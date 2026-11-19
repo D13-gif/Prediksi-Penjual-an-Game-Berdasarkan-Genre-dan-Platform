@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Game Sales AI{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <h1 class="page-title">Modern Gaming Analytics Dashboard</h1>
+    <p class="page-sub">Ringkasan dataset Kaggle VGChartz & performa Decision Tree (pipeline leakage-free).</p>
+  </div>
+  <span class="status-pill {{ 'ok' if data.model_ready else 'err' }}">{{ 'Pipeline model siap' if data.model_ready else 'Pipeline belum dimuat' }}</span>
+</div>
+
+{% if data.load_error %}<div class="alert alert-warn">{{ data.load_error }}</div>{% endif %}
+{% if data.dataset_error %}<div class="alert alert-error">{{ data.dataset_error }}</div>{% else %}
+
+<div class="grid grid-kpi">
+  <div class="card kpi"><div class="label">Total data</div><div class="value">{{ data.total_rows|comma }}</div><div class="hint">Baris pada vgsales.csv</div></div>
+  <div class="card kpi"><div class="label">Genre / Platform</div><div class="value">{{ data.n_genres }} / {{ data.n_platforms }}</div><div class="hint">{{ data.n_publishers|comma }} publisher unik</div></div>
+  <div class="card kpi"><div class="label">Test Accuracy (final)</div><div class="value">{{ data.final_metrics.accuracy|fmt4 if data.final_metrics else '-' }}</div><div class="hint">Metrik aktual dari metadata</div></div>
+  <div class="card kpi"><div class="label">Test Macro-F1 (final)</div><div class="value">{{ data.final_metrics.f1_macro|fmt4 if data.final_metrics else '-' }}</div><div class="hint">Penting untuk kelas imbalanced</div></div>
+</div>
+
+<div class="grid grid-2" style="margin-top:14px">
+  <div class="card">
+    <h3>Distribusi Sales_Category (target turunan)</h3>
+    <div class="chart-box"><canvas id="chTarget"></canvas></div>
+    <div class="muted small" style="margin-top:8px">Aturan: Rendah &lt; 0.5; Sedang 0.5–2.0; Tinggi &gt; 2.0 (juta kopi Global_Sales). Label bukan bawaan Kaggle.</div>
+  </div>
+  <div class="card">
+    <h3>Top Genre (jumlah game)</h3>
+    <div class="chart-box"><canvas id="chGenre"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Top Platform (jumlah game)</h3>
+    <div class="chart-box"><canvas id="chPlatform"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Rilis per Tahun (distribusi)</h3>
+    <div class="chart-box"><canvas id="chYear"></canvas></div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+const D = {{ charts|tojson }};
+const colors = {Rendah:'#22c55e', Sedang:'#f59e0b', Tinggi:'#ef4444'};
+const baseOpts = {responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#cfe0ff'}}}, scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'rgba(148,163,184,.12)'}}, y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(148,163,184,.12)'}}}};
+new Chart(document.getElementById('chTarget'), {type:'doughnut', data:{labels:Object.keys(D.target), datasets:[{data:Object.values(D.target), backgroundColor:Object.keys(D.target).map(k=>colors[k]||'#7c3aed'), borderColor:'#162033', borderWidth:2}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#cfe0ff'}}}}});
+const gk=Object.keys(D.by_genre), gv=Object.values(D.by_genre);
+new Chart(document.getElementById('chGenre'), {type:'bar', data:{labels:gk, datasets:[{label:'Jumlah',data:gv,backgroundColor:'rgba(124,58,237,.65)',borderRadius:6}]}, options:{...baseOpts, plugins:{legend:{display:false}}}});
+const pk=Object.keys(D.by_platform), pv=Object.values(D.by_platform);
+new Chart(document.getElementById('chPlatform'), {type:'bar', data:{labels:pk, datasets:[{label:'Jumlah',data:pv,backgroundColor:'rgba(56,189,248,.55)',borderRadius:6}]}, options:{...baseOpts, plugins:{legend:{display:false}}}});
+const yk=Object.keys(D.by_year), yv=Object.values(D.by_year);
+new Chart(document.getElementById('chYear'), {type:'line', data:{labels:yk, datasets:[{label:'Jumlah rilis',data:yv,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.15)',fill:true,tension:.25,pointRadius:0}]}, options:{...baseOpts, plugins:{legend:{display:false}}}});
+</script>
+{% endblock %}
