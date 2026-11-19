@@ -55,7 +55,7 @@ Buka **http://127.0.0.1:5000**.
 
 ## Deploy ke Vercel
 
-Aplikasi memakai entry point Flask `main.py` (`app` WSGI) dan runtime Python 3.14. Dependensi runtime dipin agar konsisten dengan versi scikit-learn yang digunakan untuk menyimpan pipeline. `vercel.json` memakai satu pola glob string untuk menyertakan file proyek, termasuk template, aset statis, dataset, dan artefak model ke function. Visualisasi pohon dibaca langsung dari artefak PNG sehingga tidak perlu menulis ke filesystem serverless yang read-only.
+Aplikasi memakai entry point Flask `main.py` (`app` WSGI) dan runtime Python 3.14. Dependensi runtime dipin agar konsisten dengan versi scikit-learn yang digunakan untuk menyimpan pipeline. `vercel.json` memakai satu pola glob terbatas untuk menyertakan file aplikasi, dataset, dan artefak model tanpa memasukkan virtualenv/build cache ke function. Visualisasi pohon dibaca langsung dari artefak PNG sehingga tidak perlu menulis ke filesystem serverless yang read-only.
 
 ### Deploy otomatis dari GitHub
 1. Push repository ini ke GitHub.

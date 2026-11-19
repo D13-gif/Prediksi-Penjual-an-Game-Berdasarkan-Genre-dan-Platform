@@ -3,7 +3,7 @@
   "functions": {
     "main.py": {
       "maxDuration": 30,
-      "includeFiles": "**/*"
+      "includeFiles": "{app/**,data/models/**,vgsales.csv}"
     }
   }
 }
